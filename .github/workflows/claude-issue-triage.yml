@@ -11,10 +11,11 @@ jobs:
       contents: read
       issues: write
       id-token: write
+      actions: write
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
@@ -40,7 +41,7 @@ jobs:
                - `documentation` — docs need updating
                - `good first issue` — simple, beginner-friendly task
                - `duplicate` — if it seems like a known/repeated problem
-            2. **Post a comment** on the issue that includes:
+            2. **Post a comment** on the issue, formatted in Markdown so GitHub renders it correctly, that includes:
                - A brief, friendly summary of what the issue is about (1-2 sentences)
                - A "Formatted Report" section with:
                  - **Type**: Bug / Feature Request / Question / Other
@@ -49,11 +50,11 @@ jobs:
                  - **Expected behavior** (for bugs): what should happen
                  - **Suggested labels**: the labels you applied and why
                - A closing note thanking the contributor
-          
-          Use the `gh` CLI to apply labels and post the comment. Example commands:
-              gh issue edit ${{ github.event.issue.number }} --add-label "bug" --repo ${{ github.repository }}
-              gh issue comment ${{ github.event.issue.number }} --body "..." --repo ${{ github.repository }}
+
+            Use the `gh` CLI to apply labels and post the comment. Example commands:
+                gh issue edit ${{ github.event.issue.number }} --add-label "bug" --repo ${{ github.repository }}
+                gh issue comment ${{ github.event.issue.number }} --body "..." --repo ${{ github.repository }}
             Be concise, helpful, and friendly. Do not over-engineer the response.
 
           claude_args: |
-            --allowed-tools "Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh label list:*)"
+            --allowed-tools "Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh label list:*),Bash(gh issue comment:*)"
