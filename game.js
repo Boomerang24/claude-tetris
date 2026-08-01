@@ -38,6 +38,9 @@ const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
 const nextCanvas = document.getElementById('next-canvas');
 const nextCtx = nextCanvas.getContext('2d');
+const holdCanvas = document.getElementById('hold-canvas');
+const holdCtx = holdCanvas.getContext('2d');
+const holdSection = document.getElementById('hold-section');
 const scoreEl = document.getElementById('score');
 const linesEl = document.getElementById('lines');
 const levelEl = document.getElementById('level');
@@ -49,7 +52,7 @@ const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 const themeToggle = document.getElementById('theme-toggle');
 
-let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let board, current, next, hold, holdLocked, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 let linesUntilPowerUp, nextIsSpecial;
 let combo, floatingTexts;
 let gridColor = getComputedStyle(document.body).getPropertyValue('--grid-color').trim();
@@ -354,10 +357,33 @@ function spawn() {
   current = next;
   next = randomPiece(nextIsSpecial);
   nextIsSpecial = false;
+  holdLocked = false;
+  holdSection.classList.remove('hold-locked');
   if (collide(current.shape, current.x, current.y)) {
     endGame();
   }
   drawNext();
+}
+
+function holdPiece() {
+  if (holdLocked) return;
+  const spawnShape = t => PIECES[t].map(row => [...row]);
+  const spawnX = t => Math.floor(COLS / 2) - Math.floor(spawnShape(t)[0].length / 2);
+  const heldFromCurrent = { type: current.type, shape: spawnShape(current.type), special: current.special };
+
+  if (hold === null) {
+    hold = heldFromCurrent;
+    spawn();
+  } else {
+    const swapped = hold;
+    hold = heldFromCurrent;
+    current = { type: swapped.type, shape: spawnShape(swapped.type), x: spawnX(swapped.type), y: 0, special: swapped.special };
+    if (collide(current.shape, current.x, current.y)) endGame();
+  }
+  holdLocked = true;
+  holdSection.classList.add('hold-locked');
+  drawHold();
+  updateHUD();
 }
 
 function updateHUD() {
@@ -462,16 +488,25 @@ function draw() {
   }
 }
 
-function drawNext() {
+function drawPreview(context, canvasEl, piece) {
   const NB = 30;
-  nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
-  const shape = next.shape;
+  context.clearRect(0, 0, canvasEl.width, canvasEl.height);
+  if (!piece) return;
+  const shape = piece.shape;
   const offX = Math.floor((4 - shape[0].length) / 2);
   const offY = Math.floor((4 - shape.length) / 2);
   for (let r = 0; r < shape.length; r++)
     for (let c = 0; c < shape[r].length; c++)
-      drawBlock(nextCtx, offX + c, offY + r, shape[r][c], NB);
-  drawSpecialOverlay(nextCtx, next, offX, offY, NB);
+      drawBlock(context, offX + c, offY + r, shape[r][c], NB);
+  drawSpecialOverlay(context, piece, offX, offY, NB);
+}
+
+function drawNext() {
+  drawPreview(nextCtx, nextCanvas, next);
+}
+
+function drawHold() {
+  drawPreview(holdCtx, holdCanvas, hold);
 }
 
 function endGame() {
@@ -528,8 +563,12 @@ function init() {
   nextIsSpecial = false;
   combo = 0;
   floatingTexts = [];
+  hold = null;
+  holdLocked = false;
+  holdSection.classList.remove('hold-locked');
   next = randomPiece(false);
   spawn();
+  drawHold();
   updateHUD();
   overlay.classList.add('hidden');
   cancelAnimationFrame(animId);
@@ -556,6 +595,11 @@ document.addEventListener('keydown', e => {
     case 'Space':
       e.preventDefault();
       hardDrop();
+      break;
+    case 'KeyC':
+    case 'ShiftLeft':
+    case 'ShiftRight':
+      holdPiece();
       break;
   }
   updateHUD();
