@@ -25,20 +25,35 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
           prompt: |
-            Analiza el issue #${{ github.event.issue.number }} en el repositorio ${{ github.repository }}.
+            You are a GitHub issue formatter for a Tetris game project (vanilla JS/HTML/CSS, no dependencies).
+            An issue was just ${{ github.event.action }} with the following details:
+            - Issue number: #${{ github.event.issue.number }}
+            - Title: ${{ github.event.issue.title }}
+            - Body: ${{ github.event.issue.body }}
+            - Author: ${{ github.event.issue.user.login }}
 
-            1. Lee el issue con `gh issue view ${{ github.event.issue.number }} --repo ${{ github.repository }}`.
-            2. Lee `CLAUDE.md` en la raíz del repo para entender la arquitectura del proyecto (Tetris en JS vanilla, archivo único `game.js`).
-            3. Revisa los labels existentes con `gh label list --repo ${{ github.repository }}` y asigna al issue los labels apropiados de esa lista con `gh issue edit ${{ github.event.issue.number }} --repo ${{ github.repository }} --add-label "..."`. No crees labels nuevos que no existan.
-            4. Edita el body del issue agregando al final (sin borrar el contenido original) una sección markdown:
-
-               ## Diagnóstico técnico
-
-               - **Causa probable**: ...
-               - **Área/función afectada**: referencia funciones y archivos concretos de `game.js` (p.ej. `collide()`, `clearLines()`, `spawn()`) según lo que describa `CLAUDE.md`.
-               - **Enfoque de solución sugerido**: descripción general de cómo abordar el fix o feature, sin escribir el código todavía.
-
-               Usa `gh issue edit ${{ github.event.issue.number }} --repo ${{ github.repository }} --body-file <archivo>` para aplicar el nuevo body completo (original + diagnóstico).
+            Your tasks:
+            1. **Add labels** based on the issue content. Use only these labels:
+               - `bug` — something is broken or behaving incorrectly
+               - `enhancement` — new feature or improvement request
+               - `question` — asking for help or clarification
+               - `documentation` — docs need updating
+               - `good first issue` — simple, beginner-friendly task
+               - `duplicate` — if it seems like a known/repeated problem
+            2. **Post a comment** on the issue that includes:
+               - A brief, friendly summary of what the issue is about (1-2 sentences)
+               - A "Formatted Report" section with:
+                 - **Type**: Bug / Feature Request / Question / Other
+                 - **Summary**: one clear sentence describing the problem or request
+                 - **Steps to reproduce** (for bugs): list them if not provided, ask the user to provide them if it's a bug
+                 - **Expected behavior** (for bugs): what should happen
+                 - **Suggested labels**: the labels you applied and why
+               - A closing note thanking the contributor
+          
+          Use the `gh` CLI to apply labels and post the comment. Example commands:
+              gh issue edit ${{ github.event.issue.number }} --add-label "bug" --repo ${{ github.repository }}
+              gh issue comment ${{ github.event.issue.number }} --body "..." --repo ${{ github.repository }}
+            Be concise, helpful, and friendly. Do not over-engineer the response.
 
           claude_args: |
             --allowed-tools "Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh label list:*)"
