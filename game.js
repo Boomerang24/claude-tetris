@@ -29,6 +29,7 @@ const PIECES = [
 ];
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
+const PERFECT_CLEAR_BONUS = [0, 800, 1200, 1800, 2000];
 
 const POWERUP_TYPES = ['tint', 'bomb', 'lightning'];
 const POWERUP_ICONS = { tint: '🎨', bomb: '💣', lightning: '⚡' };
@@ -40,6 +41,8 @@ const nextCtx = nextCanvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const linesEl = document.getElementById('lines');
 const levelEl = document.getElementById('level');
+const comboEl = document.getElementById('combo');
+const comboSection = document.getElementById('combo-section');
 const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
@@ -48,7 +51,69 @@ const themeToggle = document.getElementById('theme-toggle');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 let linesUntilPowerUp, nextIsSpecial;
+let combo, floatingTexts;
 let gridColor = getComputedStyle(document.body).getPropertyValue('--grid-color').trim();
+
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playTone(freq, duration, type = 'sine', gain = 0.15, delay = 0) {
+  const ctx2 = getAudioCtx();
+  const osc = ctx2.createOscillator();
+  const gainNode = ctx2.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  const startAt = ctx2.currentTime + delay;
+  gainNode.gain.setValueAtTime(0, startAt);
+  gainNode.gain.linearRampToValueAtTime(gain, startAt + 0.01);
+  gainNode.gain.exponentialRampToValueAtTime(0.001, startAt + duration);
+  osc.connect(gainNode);
+  gainNode.connect(ctx2.destination);
+  osc.start(startAt);
+  osc.stop(startAt + duration);
+}
+
+function playLineClearSound(cleared) {
+  playTone(330 + cleared * 60, 0.15);
+}
+
+function playComboSound(comboCount) {
+  const base = 440 + Math.min(comboCount, 8) * 40;
+  playTone(base, 0.12);
+  playTone(base * 1.25, 0.15, 'sine', 0.15, 0.08);
+}
+
+function playTetrisSound() {
+  playTone(523.25, 0.25, 'square', 0.1);
+  playTone(659.25, 0.25, 'square', 0.1);
+  playTone(783.99, 0.3, 'square', 0.1);
+}
+
+function playPerfectClearSound() {
+  [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+    playTone(freq, 0.3, 'triangle', 0.15, i * 0.09);
+  });
+}
+
+function spawnFloatingText(text, color) {
+  floatingTexts.push({ text, color, alpha: 1, y: (ROWS * BLOCK) / 2, life: 900, maxLife: 900 });
+}
+
+function updateFloatingTexts(dt) {
+  for (const t of floatingTexts) {
+    t.life -= dt;
+    t.y -= dt * 0.03;
+    t.alpha = Math.max(0, t.life / t.maxLife);
+  }
+  floatingTexts = floatingTexts.filter(t => t.life > 0);
+}
+
+function isBoardEmpty() {
+  return board.every(row => row.every(v => v === 0));
+}
 
 function setTheme(isLight) {
   document.body.classList.toggle('light-theme', isLight);
@@ -124,8 +189,9 @@ function clearLines() {
     }
   }
   if (cleared) {
+    combo++;
     lines += cleared;
-    score += (LINE_SCORES[cleared] || 0) * level;
+    score += (LINE_SCORES[cleared] || 0) * level * combo;
     level = Math.floor(lines / 10) + 1;
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
     linesUntilPowerUp -= cleared;
@@ -133,6 +199,26 @@ function clearLines() {
       nextIsSpecial = true;
       linesUntilPowerUp = randomPowerUpThreshold();
     }
+
+    if (cleared === 4) {
+      spawnFloatingText('TETRIS!', '#ffd54f');
+      playTetrisSound();
+    } else if (combo >= 2) {
+      spawnFloatingText(`COMBO x${combo}`, '#7aa2f7');
+      playComboSound(combo);
+    } else {
+      playLineClearSound(cleared);
+    }
+
+    if (isBoardEmpty()) {
+      score += PERFECT_CLEAR_BONUS[cleared] * level;
+      spawnFloatingText('PERFECT CLEAR!', '#ffe066');
+      playPerfectClearSound();
+    }
+
+    updateHUD();
+  } else {
+    combo = 0;
     updateHUD();
   }
 }
@@ -278,6 +364,8 @@ function updateHUD() {
   scoreEl.textContent = score.toLocaleString();
   linesEl.textContent = lines;
   levelEl.textContent = level;
+  comboEl.textContent = combo;
+  comboSection.classList.toggle('hidden', combo < 2);
 }
 
 function drawBlock(context, x, y, colorIndex, size, alpha) {
@@ -358,6 +446,20 @@ function draw() {
       drawBlock(ctx, current.x + c, current.y + r, current.shape[r][c], BLOCK);
 
   drawSpecialOverlay(ctx, current, current.x, current.y, BLOCK);
+
+  for (const t of floatingTexts) {
+    ctx.save();
+    ctx.globalAlpha = t.alpha;
+    ctx.fillStyle = t.color;
+    ctx.font = 'bold 22px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+    ctx.lineWidth = 3;
+    ctx.strokeText(t.text, canvas.width / 2, t.y);
+    ctx.fillText(t.text, canvas.width / 2, t.y);
+    ctx.restore();
+  }
 }
 
 function drawNext() {
@@ -397,6 +499,7 @@ function togglePause() {
 function loop(ts) {
   const dt = ts - lastTime;
   lastTime = ts;
+  updateFloatingTexts(dt);
   dropAccum += dt;
   if (dropAccum >= dropInterval) {
     dropAccum = 0;
@@ -423,6 +526,8 @@ function init() {
   lastTime = performance.now();
   linesUntilPowerUp = randomPowerUpThreshold();
   nextIsSpecial = false;
+  combo = 0;
+  floatingTexts = [];
   next = randomPiece(false);
   spawn();
   updateHUD();
