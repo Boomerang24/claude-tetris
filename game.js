@@ -39,8 +39,17 @@ const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
+const themeToggle = document.getElementById('theme-toggle');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let gridColor = getComputedStyle(document.body).getPropertyValue('--grid-color').trim();
+
+function setTheme(isLight) {
+  document.body.classList.toggle('light-theme', isLight);
+  gridColor = getComputedStyle(document.body).getPropertyValue('--grid-color').trim();
+}
+
+themeToggle.addEventListener('change', () => setTheme(themeToggle.checked));
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -169,7 +178,7 @@ function drawBlock(context, x, y, colorIndex, size, alpha) {
 }
 
 function drawGrid() {
-  ctx.strokeStyle = '#22222e';
+  ctx.strokeStyle = gridColor;
   ctx.lineWidth = 0.5;
   for (let c = 1; c < COLS; c++) {
     ctx.beginPath();
