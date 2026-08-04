@@ -46,6 +46,23 @@ body.light-theme {
   --grid-color: #dcdce6;
 }
 
+/* ---- Skins ---- */
+body.skin-neon {
+  --bg: #05050a;
+  --board-bg: #000000;
+  --board-border: #1a1a2e;
+  --grid-color: #12122a;
+  --title-glow: rgba(0, 247, 255, 0.6);
+}
+
+body.skin-pastel {
+  --grid-color: #eae3f0;
+}
+
+body.skin-pixel {
+  --grid-color: #2a2a2a;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -174,6 +191,28 @@ body {
 
 .switch input:checked ~ .switch-track .switch-thumb {
   transform: translateX(20px);
+}
+
+/* ---- Selector de skin ---- */
+#skin-select {
+  background: var(--kbd-bg);
+  color: var(--text);
+  border: 1px solid var(--kbd-border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+#skin-select:focus {
+  outline: 1px solid var(--value-color);
+}
+
+#skin-select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* ---- Controles ---- */
