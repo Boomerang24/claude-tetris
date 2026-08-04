@@ -69,6 +69,24 @@
       <div class="overlay-box">
         <p id="overlay-title">GAME OVER</p>
         <p id="overlay-score"></p>
+
+        <div class="panel-section hidden" id="overlay-best-stats">
+          <div><span class="label">MEJOR COMBO</span> <span class="value" id="best-combo-value">0</span></div>
+          <div><span class="label">MÁX. LÍNEAS</span> <span class="value" id="best-lines-value">0</span></div>
+        </div>
+
+        <div class="panel-section hidden" id="overlay-leaderboard">
+          <span class="label">TOP 5</span>
+          <ol id="overlay-leaderboard-list" class="leaderboard-list"></ol>
+          <button id="reset-records-btn" class="secondary-btn" type="button">Borrar récords</button>
+        </div>
+
+        <div class="panel-section hidden" id="name-input-section">
+          <span class="label">¡Nuevo récord! Ingresa tu nombre</span>
+          <input type="text" id="player-name-input" maxlength="12" placeholder="AAA" />
+          <button id="save-record-btn" type="button">Guardar</button>
+        </div>
+
         <button id="restart-btn">Reiniciar</button>
       </div>
     </div>
