@@ -69,7 +69,24 @@
       <div class="overlay-box">
         <p id="overlay-title">GAME OVER</p>
         <p id="overlay-score"></p>
+        <div id="gameover-name-form" class="hidden">
+          <input id="gameover-name-input" maxlength="12" placeholder="Tu nombre" />
+          <button id="gameover-save-btn">Guardar</button>
+        </div>
+        <p class="highscore-title">RÉCORDS</p>
+        <ol id="gameover-highscores" class="highscore-list"></ol>
+        <p id="gameover-stats" class="highscore-stats"></p>
         <button id="restart-btn">Reiniciar</button>
+      </div>
+    </div>
+
+    <div id="start-overlay" class="overlay">
+      <div class="overlay-box">
+        <p class="highscore-title">RÉCORDS</p>
+        <ol id="start-highscores" class="highscore-list"></ol>
+        <p id="start-stats" class="highscore-stats"></p>
+        <button id="start-btn">JUGAR</button>
+        <button id="reset-highscores-btn" class="reset-btn">Resetear récords</button>
       </div>
     </div>
   </div>
