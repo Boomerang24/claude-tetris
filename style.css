@@ -46,6 +46,36 @@ body.light-theme {
   --grid-color: #dcdce6;
 }
 
+/* ---- Skins visuales ---- */
+body.skin-neon {
+  --bg: #060608;
+  --board-bg: #000000;
+  --board-border: #00fff2;
+  --grid-color: #072a28;
+  --title-color: #ff2df5;
+  --title-glow: rgba(0, 255, 242, 0.6);
+  --value-color: #00fff2;
+  --label-color: #6de6de;
+}
+
+body.skin-pastel {
+  --bg: #fdf3f8;
+  --text: #4a3f4d;
+  --board-bg: #fffaf6;
+  --board-border: #e3c2ea;
+  --grid-color: #f2e2ef;
+  --title-color: #d68fd6;
+  --title-glow: rgba(214, 143, 214, 0.35);
+  --value-color: #a97bc4;
+  --label-color: #b699c2;
+}
+
+body.skin-pixelart #board,
+body.skin-pixelart #next-canvas,
+body.skin-pixelart #hold-canvas {
+  image-rendering: pixelated;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -174,6 +204,18 @@ body {
 
 .switch input:checked ~ .switch-track .switch-thumb {
   transform: translateX(20px);
+}
+
+/* ---- Selector de skin ---- */
+.skin-select-section select {
+  background: var(--kbd-bg);
+  color: var(--text);
+  border: 1px solid var(--kbd-border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 /* ---- Controles ---- */

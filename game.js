@@ -28,6 +28,14 @@ const PIECES = [
   [[8,8,8],[8,0,8],[8,8,8]],                  // N - tuerca (nut)
 ];
 
+const SKIN_PALETTES = {
+  retro: COLORS,
+  neon: [null, '#00fff2', '#faff00', '#ff2df5', '#39ff6a', '#ff3b3b', '#3d9dff', '#ff9d1f', '#e8e8ff'],
+  pastel: [null, '#a8e6ea', '#fff2b3', '#e3c2ea', '#c3ecc0', '#f5c2c2', '#c2d9f5', '#ffd9b3', '#dbe0e6'],
+  pixelart: COLORS,
+};
+let currentSkin = 'retro';
+
 const LINE_SCORES = [0, 100, 300, 500, 800];
 const PERFECT_CLEAR_BONUS = [0, 800, 1200, 1800, 2000];
 
@@ -51,6 +59,7 @@ const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 const themeToggle = document.getElementById('theme-toggle');
+const skinSelect = document.getElementById('skin-select');
 
 let board, current, next, hold, holdLocked, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 let linesUntilPowerUp, nextIsSpecial;
@@ -124,6 +133,23 @@ function setTheme(isLight) {
 }
 
 themeToggle.addEventListener('change', () => setTheme(themeToggle.checked));
+
+function setSkin(name) {
+  if (!SKIN_PALETTES[name]) return;
+  currentSkin = name;
+  localStorage.setItem('tetris-skin', name);
+  document.body.classList.remove('skin-retro', 'skin-neon', 'skin-pastel', 'skin-pixelart');
+  document.body.classList.add(`skin-${name}`);
+  if (typeof current !== 'undefined' && current) {
+    draw();
+    drawNext();
+    drawHold();
+  }
+}
+
+skinSelect.addEventListener('change', () => setSkin(skinSelect.value));
+skinSelect.value = localStorage.getItem('tetris-skin') || 'retro';
+setSkin(skinSelect.value);
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -394,15 +420,61 @@ function updateHUD() {
   comboSection.classList.toggle('hidden', combo < 2);
 }
 
+function drawRoundedRect(context, x, y, w, h, r) {
+  context.beginPath();
+  context.moveTo(x + r, y);
+  context.arcTo(x + w, y, x + w, y + h, r);
+  context.arcTo(x + w, y + h, x, y + h, r);
+  context.arcTo(x, y + h, x, y, r);
+  context.arcTo(x, y, x + w, y, r);
+  context.closePath();
+}
+
+function drawPixelTexture(context, px, py, size) {
+  const cells = 4;
+  const cellSize = size / cells;
+  for (let r = 0; r < cells; r++) {
+    for (let c = 0; c < cells; c++) {
+      if ((r + c) % 2 !== 0) continue;
+      context.fillStyle = (r % 2 === 0) ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.10)';
+      context.fillRect(px + c * cellSize, py + r * cellSize, cellSize, cellSize);
+    }
+  }
+}
+
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
-  const color = COLORS[colorIndex];
+  const color = SKIN_PALETTES[currentSkin][colorIndex];
+  const px = x * size;
+  const py = y * size;
   context.globalAlpha = alpha ?? 1;
-  context.fillStyle = color;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+
+  if (currentSkin === 'neon') {
+    context.save();
+    context.shadowBlur = 12;
+    context.shadowColor = color;
+    context.fillStyle = color;
+    context.fillRect(px + 2, py + 2, size - 4, size - 4);
+    context.restore();
+    context.strokeStyle = color;
+    context.lineWidth = 1;
+    context.strokeRect(px + 1.5, py + 1.5, size - 3, size - 3);
+  } else if (currentSkin === 'pastel') {
+    context.fillStyle = color;
+    drawRoundedRect(context, px + 2, py + 2, size - 4, size - 4, size * 0.22);
+    context.fill();
+  } else if (currentSkin === 'pixelart') {
+    context.fillStyle = color;
+    context.fillRect(px + 1, py + 1, size - 2, size - 2);
+    drawPixelTexture(context, px + 1, py + 1, size - 2);
+  } else {
+    context.fillStyle = color;
+    context.fillRect(px + 1, py + 1, size - 2, size - 2);
+    // highlight
+    context.fillStyle = 'rgba(255,255,255,0.12)';
+    context.fillRect(px + 1, py + 1, size - 2, 4);
+  }
+
   context.globalAlpha = 1;
 }
 
